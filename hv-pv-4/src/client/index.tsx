@@ -1,56 +1,62 @@
-//Reemplaza a app.tsx y actua de pagina de inicio
-import React, { useEffect, useState } from 'react';
-import io, { Socket } from 'socket.io-client';
-import styles from '..src/client/style.css';
+import React, { useEffect, useState, useRef } from 'react';
+import io from 'socket.io-client';
+import styles from './style.css';
 
-//Interfaz de los mensajes de chat
+// Interfaz de los mensajes de chat
 interface Message {
   text: string;
   user: string;
 }
 
-// Configurar el socket en el cliente
-const socket: Socket = io('http://localhost:3000');
+// Define el tipo de socket usando ReturnType
+type Socket = ReturnType<typeof io>;
 
 const HomePage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState<string>('');
+  const socket = useRef<Socket | null>(null);
 
+  // Configurar el socket en el cliente dentro del useEffect
   useEffect(() => {
-    // Escuchar mensajes entrantes del servidor
-    socket.on('chat message', (msg: Message) => {
-      setMessages(prevMessages => [...prevMessages, msg]);
-    });
+    if (typeof window !== 'undefined') {
+      socket.current = io('http://localhost:3000');
 
-    // Limpiar el socket cuando se desmonte el componente
-    return () => {
-      socket.off('chat message');
-    };
+      // Escuchar mensajes entrantes del servidor
+      socket.current.on('chat message', (msg: Message) => {
+        setMessages((prevMessages) => [...prevMessages, msg]);
+      });
+
+      // Limpiar el socket cuando se desmonte el componente
+      return () => {
+        socket.current?.off('chat message');
+        socket.current?.disconnect();
+      };
+    }
   }, []);
 
   const sendMessage = () => {
-    if (input.trim()) {
-      socket.emit('chat message', { text: input, user: 'User' });
-      setInput('');
+    if (input.trim() && socket.current) {
+      socket.current.emit('chat message', { text: input, user: 'User' });
+      setInput('');  // Limpiar el campo de entrada después de enviar
+    } else {
+      console.error('No se pudo enviar el mensaje: entrada vacía o sin conexión.');
     }
   };
 
   return (
-    <div className={styles.container}>
-      <h1>Chat App</h1>
-      <div className={styles.chatWindow}>
-        {messages.map((msg, index) => (
-          <div key={index} className={styles.message}>
-            <strong>{msg.user}</strong>: {msg.text}
-          </div>
+    <div className={styles.chatContainer}>
+      <div className={styles.messages}>
+        {messages.map((msg, idx) => (
+          <p key={idx}><strong>{msg.user}:</strong> {msg.text}</p>
         ))}
       </div>
       <input
+        type="text"
         value={input}
         onChange={(e) => setInput(e.target.value)}
-        placeholder="Type your message..."
+        placeholder="Escribe un mensaje"
       />
-      <button onClick={sendMessage}>Send</button>
+      <button onClick={sendMessage}>Enviar</button>
     </div>
   );
 };

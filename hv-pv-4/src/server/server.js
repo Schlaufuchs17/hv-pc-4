@@ -2,14 +2,18 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const next = require('next');
+
 const dev = process.env.NODE_ENV !== 'production';
-const app = next({ dev });
+const app = next({ dev, dir: './src/client' }); // Directorio actualizado
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
   const server = express();
   const httpServer = http.createServer(server);
   const io = new Server(httpServer);
+
+  // Middleware para manejar JSON en Express
+  server.use(express.json());
 
   // Configuración de Socket.io
   io.on('connection', (socket) => {
@@ -29,9 +33,15 @@ app.prepare().then(() => {
   // Configuración de Next.js
   server.all('*', (req, res) => handle(req, res));
 
+  // Middleware de manejo de errores
+  server.use((err, req, res, next) => {
+    console.error('Error en el servidor:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  });
+
   // Iniciar el servidor
   const PORT = process.env.PORT || 3000;
   httpServer.listen(PORT, () => {
-    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+    console.log(`Servidor listo en http://localhost:${PORT}`);
   });
 });
