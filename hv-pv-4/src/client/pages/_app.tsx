@@ -1,12 +1,13 @@
 //## Revisar que no de problemas
 import type { AppProps } from 'next/app';
-import '../client/style.css';
+import '../client/style.css';  // Ajusta la ruta según la ubicación exacta de style.css
 
-function App({ Component, pageProps }: AppProps) {
+function MyApp({ Component, pageProps }: AppProps) {
   return <Component {...pageProps} />;
 }
 
-export default App;
+export default MyApp;
+
 
 
 /*_app.tsx da una especie de soporte a Next.js a manejar estilos 

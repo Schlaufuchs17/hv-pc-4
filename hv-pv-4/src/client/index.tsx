@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import io from 'socket.io-client';
-import styles from './style.css';
+/*Revisar la importacion desde _app.tsx  -->*/import styles from './style.module.css'; //Habia que convertirlo a modulo para que lo importara bien
 
 // Interfaz de los mensajes de chat
 interface Message {
