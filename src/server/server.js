@@ -11,27 +11,24 @@ app.prepare().then(() => {
   const server = express();
   const httpServer = createServer(server);
   
-  // Configuración de CORS en Socket.IO
   const io = new Server(httpServer, {
     cors: {
-      origin: "*", // Permitir conexiones desde cualquier origen
+      origin: "*", 
       methods: ["GET", "POST"],
     },
-    transports: ['websocket'], // Forzar el uso de WebSocket
+    transports: ['websocket'],
   });
 
   io.on('connection', (socket) => {
     console.log('Usuario conectado con ID:', socket.id);
 
-    // Verifica cada intento de reconexión
     socket.on('reconnect_attempt', (attempt) => {
       console.log(`Intento de reconexión número: ${attempt}`);
     });
 
-    // Log para verificar que se recibe un mensaje
     socket.on('chat message', (msg) => {
       console.log('Mensaje recibido en el servidor:', msg);
-      io.emit('chat message', msg); // Reenvía el mensaje a todos los clientes
+      io.emit('chat message', msg);
     });
 
     socket.on('disconnect', (reason) => {
@@ -39,7 +36,6 @@ app.prepare().then(() => {
     });
   });
 
-  // Manejo de todas las demás rutas con Next.js
   server.all('*', (req, res) => handle(req, res));
 
   const PORT = process.env.PORT || 3000;

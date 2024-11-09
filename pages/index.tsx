@@ -10,34 +10,35 @@ interface Message {
 const HomePage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState<string>('');
+  
   const socket = useRef<Socket | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null); 
+
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    inputRef.current?.focus();
+
     if (typeof window !== 'undefined') {
-      // Configura el socket con opciones para forzar WebSocket
       socket.current = io('http://localhost:3000', {
-        transports: ['websocket'],  // Forzar WebSocket para evitar problemas con polling
-        reconnectionAttempts: 5,    // Reintentar conexión 5 veces
-        timeout: 10000,             // Tiempo de espera para establecer la conexión
+        transports: ['websocket'], 
+        reconnectionAttempts: 5,  
+        timeout: 10000,
       });
 
-      // Verifica la conexión
       socket.current.on('connect', () => {
         console.log('Conectado a Socket.IO con ID:', socket.current?.id);
       });
 
-      // Si la conexión falla
       socket.current.on('connect_error', (err) => {
         console.error('Error de conexión:', err.message);
       });
 
-      // Recibir mensajes desde el servidor
       socket.current.on('chat message', (msg: Message) => {
-        console.log('Mensaje recibido en el cliente:', msg); // Para verificar el mensaje recibido
+        console.log('Mensaje recibido en el cliente:', msg);
         setMessages((prevMessages) => [...prevMessages, msg]);
       });
 
-      // Limpieza al desmontar el componente
       return () => {
         socket.current?.off('chat message');
         socket.current?.disconnect();
@@ -45,36 +46,61 @@ const HomePage: React.FC = () => {
     }
   }, []);
 
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]); 
+
   const sendMessage = () => {
     if (input.trim() && socket.current) {
-      console.log('Enviando mensaje:', { text: input, user: 'User' }); // Log del mensaje enviado
+      console.log('Enviando mensaje:', { text: input, user: 'User' });
       socket.current.emit('chat message', { text: input, user: 'User' });
       setInput('');
+      inputRef.current?.focus();
     } else {
       console.error('No se pudo enviar el mensaje: entrada vacía o sin conexión.');
     }
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      sendMessage();
+    }
+  };
+
   return (
-    <div className={styles.chatContainer}>
-      <div className={styles.messages}>
-        {messages.map((msg, idx) => (
-          <p key={idx} className={styles.messageItem}>
-            <strong>{msg.user}:</strong> {msg.text}
-          </p>
-        ))}
-      </div>
-      <div className={styles.form}>
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Escribe un mensaje"
-          className={styles.input}
-        />
-        <button onClick={sendMessage} className={styles.sendButton}>
-          Enviar
-        </button>
+    <div className={styles.pageContainer}>
+      <div className={styles.chatContainer}>
+        <div className={styles.messages}>
+          {}
+          {messages.map((msg, idx) => (
+            <p
+              key={idx}
+              className={`${styles.messageItem} ${
+                idx % 2 === 0 ? styles.alignLeft : styles.alignRight
+              }`}
+            >
+              <strong>{msg.user}:</strong> {msg.text}
+            </p>
+          ))}
+          {}
+          <div ref={messagesEndRef} />
+        </div>
+        <div className={styles.form}>
+          <input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)} 
+            onKeyDown={handleKeyDown} 
+            placeholder="Escribe un mensaje"
+            className={styles.input}
+          />
+          <button onClick={sendMessage} className={styles.sendButton}>
+            Enviar
+          </button>
+        </div>
       </div>
     </div>
   );
