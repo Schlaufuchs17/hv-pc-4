@@ -59,5 +59,6 @@ Este proyecto es una aplicación web desarrollada con **Next.js**, **TypeScript*
 
 ## Uso
 
-1. Ejecuta `npm run dev` para el modo de desarrollo.
-2. Accede a la aplicación en `http://localhost:3000`.
+1. Ejecuta `npm run build` para compilar la aplicación.
+2. Ejecuta `npm start`para iniciar la aplicación.
+3. Accede a la aplicación en `http://localhost:3000`.
