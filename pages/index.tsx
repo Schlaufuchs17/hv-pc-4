@@ -10,10 +10,12 @@ interface Message {
 const HomePage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState<string>('');
-  
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
+  const [editingText, setEditingText] = useState<string>('');
+
   const socket = useRef<Socket | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null); 
-
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -69,22 +71,42 @@ const HomePage: React.FC = () => {
     }
   };
 
+  const handleEditMessage = (index: number) => {
+    setEditingMessageIndex(index);
+    setEditingText(messages[index].text);
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (editingMessageIndex !== null) {
+      const updatedMessages = [...messages];
+      updatedMessages[editingMessageIndex] = { ...updatedMessages[editingMessageIndex], text: editingText };
+      setMessages(updatedMessages);
+      setIsEditing(false);
+      setEditingMessageIndex(null);
+      setEditingText('');
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsEditing(false);
+    setEditingMessageIndex(null);
+    setEditingText('');
+  };
+
   return (
     <div className={styles.pageContainer}>
       <div className={styles.chatContainer}>
         <div className={styles.messages}>
-          {}
           {messages.map((msg, idx) => (
             <p
               key={idx}
-              className={`${styles.messageItem} ${
-                idx % 2 === 0 ? styles.alignLeft : styles.alignRight
-              }`}
+              className={`${styles.messageItem} ${idx % 2 === 0 ? styles.alignLeft : styles.alignRight}`}
+              onClick={() => handleEditMessage(idx)}
             >
               <strong>{msg.user}:</strong> {msg.text}
             </p>
           ))}
-          {}
           <div ref={messagesEndRef} />
         </div>
         <div className={styles.form}>
@@ -102,6 +124,22 @@ const HomePage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {isEditing && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            
+            <input
+              type="text"
+              value={editingText}
+              onChange={(e) => setEditingText(e.target.value)}
+              className={styles.modalInput}
+            />
+            <button onClick={handleSaveEdit} className={styles.saveButton}>Guardar</button>
+            <button onClick={handleCloseModal} className={styles.cancelButton}>Cancelar</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
