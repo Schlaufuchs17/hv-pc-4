@@ -1,10 +1,16 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
 .pageContainer {
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 100vh;
     min-width: 100vh;
-    background: linear-gradient(135deg, #223686, #3a31b3, #c220f3); /* Fondo degradado */
+    background: linear-gradient(135deg, #223686, #3a31b3, #c220f3);
     margin: 0;
 }
 
