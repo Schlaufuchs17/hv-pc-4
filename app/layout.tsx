@@ -1,5 +1,5 @@
-import '../styles/style.css';
-import '../styles/globals.css';
+import './styles/style.css';
+//import '../styles/globals.css';
 
 export const metadata = {
   title: 'Chatbot Next',

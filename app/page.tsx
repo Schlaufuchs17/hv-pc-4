@@ -12,88 +12,60 @@ interface Message {
 const HomePage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState<string>('');
-  const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
-  const [editingText, setEditingText] = useState<string>('');
-
   const socket = useRef<Socket | null>(null);
-  const inputRef = useRef<HTMLInputElement | null>(null); 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    inputRef.current?.focus();
+    const socketInstance = io('/api/socket', {
+      path: '/api/socket',
+      transports: ['websocket'],
+    });
 
-    if (typeof window !== 'undefined') {
-      socket.current = io('http://localhost:3000', {
-        transports: ['websocket'], 
-        reconnectionAttempts: 5,  
-        timeout: 10000,
-      });
+    socketInstance.on('connect', () => {
+      console.log('Conectado a Socket.IO con ID:', socketInstance.id);
+    });
 
-      socket.current.on('connect', () => {
-        console.log('Conectado a Socket.IO con ID:', socket.current?.id);
-      });
+    socketInstance.on('connect_error', (err) => {
+      console.error('Error de conexión:', err.message);
+      alert('No se pudo conectar al servidor. Por favor, verifica tu conexión.');
+    });
 
-      socket.current.on('connect_error', (err) => {
-        console.error('Error de conexión:', err.message);
-      });
-
-      socket.current.on('chat message', (msg: Message) => {
+    socketInstance.on('chat message', (msg: Message) => {
+      if (msg && msg.text && msg.user) {
         console.log('Mensaje recibido en el cliente:', msg);
         setMessages((prevMessages) => [...prevMessages, msg]);
-      });
+      } else {
+        console.error('Mensaje inválido recibido:', msg);
+      }
+    });
 
-      return () => {
-        socket.current?.off('chat message');
-        socket.current?.disconnect();
-      };
-    }
+    socket.current = socketInstance;
+
+    return () => {
+      socketInstance.disconnect();
+      console.log('Socket desconectado.');
+    };
   }, []);
 
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages]); 
+  }, [messages]);
 
   const sendMessage = () => {
-    if (input.trim() && socket.current) {
-      console.log('Enviando mensaje:', { text: input, user: 'User' });
-      socket.current.emit('chat message', { text: input, user: 'User' });
-      setInput('');
-      inputRef.current?.focus();
-    } else {
-      console.error('No se pudo enviar el mensaje: entrada vacía o sin conexión.');
+    if (!socket.current) {
+      console.error('Socket no inicializado. Verifica la conexión.');
+      return;
     }
-  };
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') {
-      sendMessage();
+    if (!input.trim()) {
+      console.error('El mensaje está vacío. Por favor, escribe algo antes de enviar.');
+      return;
     }
-  };
 
-  const handleEditMessage = (index: number) => {
-    setEditingMessageIndex(index);
-    setEditingText(messages[index].text);
-    setIsEditing(true);
-  };
-
-  const handleSaveEdit = () => {
-    if (editingMessageIndex !== null) {
-      const updatedMessages = [...messages];
-      updatedMessages[editingMessageIndex] = { ...updatedMessages[editingMessageIndex], text: editingText };
-      setMessages(updatedMessages);
-      setIsEditing(false);
-      setEditingMessageIndex(null);
-      setEditingText('');
-    }
-  };
-
-  const handleCloseModal = () => {
-    setIsEditing(false);
-    setEditingMessageIndex(null);
-    setEditingText('');
+    socket.current.emit('chat message', { text: input, user: 'User' });
+    setInput('');
   };
 
   return (
@@ -101,11 +73,7 @@ const HomePage: React.FC = () => {
       <div className={styles.chatContainer}>
         <div className={styles.messages}>
           {messages.map((msg, idx) => (
-            <p
-              key={idx}
-              className={`${styles.messageItem} ${idx % 2 === 0 ? styles.alignLeft : styles.alignRight}`}
-              onClick={() => handleEditMessage(idx)}
-            >
+            <p key={idx} className={styles.messageItem}>
               <strong>{msg.user}:</strong> {msg.text}
             </p>
           ))}
@@ -113,11 +81,9 @@ const HomePage: React.FC = () => {
         </div>
         <div className={styles.form}>
           <input
-            ref={inputRef}
             type="text"
             value={input}
-            onChange={(e) => setInput(e.target.value)} 
-            onKeyDown={handleKeyDown} 
+            onChange={(e) => setInput(e.target.value)}
             placeholder="Escribe un mensaje"
             className={styles.input}
           />
@@ -126,21 +92,6 @@ const HomePage: React.FC = () => {
           </button>
         </div>
       </div>
-
-      {isEditing && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modal}>
-            <input
-              type="text"
-              value={editingText}
-              onChange={(e) => setEditingText(e.target.value)}
-              className={styles.modalInput}
-            />
-            <button onClick={handleSaveEdit} className={styles.saveButton}>Guardar</button>
-            <button onClick={handleCloseModal} className={styles.cancelButton}>Cancelar</button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
